@@ -1,0 +1,114 @@
+[
+  {
+    "title": "Digha",
+    "slug": "digha",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/683596ca35957-Digha.jpg",
+    "url": "https://www.adotrip.com/destination-detail/digha"
+  },
+  {
+    "title": "Nandi Hills",
+    "slug": "nandi-hills",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/6835688c9f97d-Nandi_Hills.jpg",
+    "url": "https://www.adotrip.com/destination-detail/nandi-hills"
+  },
+  {
+    "title": "Murudeshwara",
+    "slug": "murudeshwara",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/68357b94349c0-Murudeshwara.jpg",
+    "url": "https://www.adotrip.com/destination-detail/murudeshwara"
+  },
+  {
+    "title": "Bhuntar Tourism",
+    "slug": "bhuntar",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/682b09d650aa0-Bhuntar-Tourism-1000x700.png",
+    "url": "https://www.adotrip.com/destination-detail/bhuntar"
+  },
+  {
+    "title": "Lataguri",
+    "slug": "lataguri",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/682b035406ce1-Lataguri-1000x700.png",
+    "url": "https://www.adotrip.com/destination-detail/lataguri"
+  },
+  {
+    "title": "Rajghat",
+    "slug": "rajghat",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/675297f0a5543-Rajghat.jpg",
+    "url": "https://www.adotrip.com/destination-detail/rajghat"
+  },
+  {
+    "title": "Akshardham Temple",
+    "slug": "akshardham-temple",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/6752983b61dc3-Akshardham.jpg",
+    "url": "https://www.adotrip.com/destination-detail/akshardham-temple"
+  },
+  {
+    "title": "Lodi Garden",
+    "slug": "lodi-garden",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/67443a6513b64-Lodi Garden.jpg",
+    "url": "https://www.adotrip.com/destination-detail/lodi-garden"
+  },
+  {
+    "title": "Ajmer Fort",
+    "slug": "ajmer-fort",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/673c7ffb4dcb2-Ajmer-Fort_1000x700.jpg",
+    "url": "https://www.adotrip.com/destination-detail/ajmer-fort"
+  },
+  {
+    "title": "Champa Gali",
+    "slug": "champa-gali",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/673c787a0f4cc-Delhi-Champa-Gali_Place.jpg",
+    "url": "https://www.adotrip.com/destination-detail/champa-gali"
+  },
+  {
+    "title": "Kilthan Island",
+    "slug": "kilthan-island",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/66cf0313b5098-kilthan-island.jpg",
+    "url": "https://www.adotrip.com/destination-detail/kilthan-island"
+  },
+  {
+    "title": "Chetlat Island",
+    "slug": "chetlat-island",
+    "type": "area",
+    "image": "https://www.adotrip.com/public/images/areas/master_images/66cff8d9d624d-chetlat-island.jpg",
+    "url": "https://www.adotrip.com/destination-detail/chetlat-island"
+  },
+  {
+    "title": "Kanak Bhavan",
+    "slug": "kanak-bhavan",
+    "type": "area",
+    "image": "https://www.adotrip.com//public/images/areas/master_images/66d17d5f108a0-d-2.webp",
+    "url": "destination-detail/kanak-bhavan"
+  },
+  {
+    "title": "Guptar Ghat",
+    "slug": "guptar-ghat",
+    "type": "area",
+    "image": "https://www.adotrip.com//public/images/areas/master_images/66d17d71e036b-d-3.jpg",
+    "url": "destination-detail/guptar-ghat"
+  },
+  {
+    "title": "Bitra Island",
+    "slug": "bitra-island",
+    "type": "area",
+    "image": "https://www.adotrip.com//public/images/areas/master_images/66d172d853732-d-4.webp",
+    "url": "destination-detail/bitra-island"
+  },
+  {
+    "title": "Agatti Island",
+    "slug": "agatti-island",
+    "type": "area",
+    "image": "https://www.adotrip.com//public/images/areas/master_images/66d1730abd113-d-5.png",
+    "url": "destination-detail/agatti-island"
+  }
+]
