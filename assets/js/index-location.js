@@ -1,7 +1,42 @@
 (function () {
     'use strict';
 
-    const PEXELS_API_KEY = 'y6WP5reQNH7abdL2uzdLTyV8pq0kMmF3CHf7ZNkiHo98DXIvORUOBSfi';
+    // Pexels API proxy URL (Cloudflare Pages Function handles auth + caching)
+    const PEXELS_PROXY_URL = '/api/pexels-proxy';
+
+    // Request queue to prevent bursting (200ms between requests)
+    const requestQueue = [];
+    let isProcessingQueue = false;
+
+    async function enqueueRequest(url) {
+        return new Promise((resolve, reject) => {
+            requestQueue.push({ url, resolve, reject });
+            if (!isProcessingQueue) {
+                processQueue();
+            }
+        });
+    }
+
+    async function processQueue() {
+        if (isProcessingQueue || requestQueue.length === 0) return;
+        isProcessingQueue = true;
+
+        while (requestQueue.length > 0) {
+            const { url, resolve, reject } = requestQueue.shift();
+            try {
+                const response = await fetch(url);
+                resolve(response);
+            } catch (error) {
+                reject(error);
+            }
+            // Wait 200ms between requests
+            if (requestQueue.length > 0) {
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
+
+        isProcessingQueue = false;
+    }
 
     // Keywords to filter out unwanted images
     const UNWANTED_KEYWORDS = [
@@ -456,16 +491,12 @@
         }
 
         try {
-            let url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=${perPage}`;
+            let url = `${PEXELS_PROXY_URL}?query=${encodeURIComponent(searchQuery)}&per_page=${perPage}`;
             if (orientation) {
                 url += `&orientation=${orientation}`;
             }
 
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: PEXELS_API_KEY
-                }
-            });
+            const response = await enqueueRequest(url);
 
             const data = await response.json();
 
@@ -959,8 +990,6 @@ function initializeRandomHeroImage() {
     const container = document.getElementById('container-image');
     if (!container) return;
 
-    const PEXELS_API_KEY = 'y6WP5reQNH7abdL2uzdLTyV8pq0kMmF3CHf7ZNkiHo98DXIvORUOBSfi';
-
     // Ensure container has position relative for absolute children
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
@@ -978,7 +1007,7 @@ function initializeRandomHeroImage() {
     let nextImageUrl = null;
     let isFetching = false;
 
-    // Fetch image from Pexels API
+    // Fetch image from Pexels API via proxy
     async function fetchPexelsImage() {
         if (isFetching) return null;
         isFetching = true;
@@ -988,12 +1017,7 @@ function initializeRandomHeroImage() {
             const randomPage = Math.floor(Math.random() * 10) + 1;
 
             const response = await fetch(
-                `https://api.pexels.com/v1/search?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`,
-                {
-                    headers: {
-                        Authorization: PEXELS_API_KEY
-                    }
-                }
+                `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`
             );
 
             if (!response.ok) {
@@ -1099,8 +1123,6 @@ function initializeRandomHeroImagev2() {
     const container = document.getElementById('travel-based-flight');
     if (!container) return;
 
-    const PEXELS_API_KEY = 'y6WP5reQNH7abdL2uzdLTyV8pq0kMmF3CHf7ZNkiHo98DXIvORUOBSfi';
-
     const keywords = [
         'travel destination',
         'tourism',
@@ -1123,19 +1145,14 @@ function initializeRandomHeroImagev2() {
     let nextImageUrl2 = null;
     let isFetching = false;
 
-    // Fetch image from Pexels API
+    // Fetch image from Pexels API via proxy
     async function fetchPexelsImage() {
         try {
             const keyword = keywords[Math.floor(Math.random() * keywords.length)];
             const randomPage = Math.floor(Math.random() * 10) + 1;
 
             const response = await fetch(
-                `https://api.pexels.com/v1/search?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`,
-                {
-                    headers: {
-                        Authorization: PEXELS_API_KEY
-                    }
-                }
+                `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`
             );
 
             if (!response.ok) {
