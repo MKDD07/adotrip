@@ -4,7 +4,50 @@
     // Pexels API proxy URL (Cloudflare Pages Function handles auth + caching)
     const PEXELS_PROXY_URL = '/api/pexels-proxy';
 
-    // Request queue to prevent bursting (200ms between requests)
+    // ============================================================================
+    // LOCALSTORAGE CACHE - Survives page reloads, expires after 24 hours
+    // ============================================================================
+    const CACHE_PREFIX = 'pexels_';
+    const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+    function getCachedResult(query) {
+        try {
+            const key = CACHE_PREFIX + query.toLowerCase().trim();
+            const cached = localStorage.getItem(key);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < CACHE_EXPIRY_MS) {
+                    console.log(`%c[CACHE] ✅ HIT: ${query}`, 'color: #8BC34A');
+                    return parsed.data;
+                }
+                localStorage.removeItem(key); // expired
+            }
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    function setCachedResult(query, data) {
+        try {
+            const key = CACHE_PREFIX + query.toLowerCase().trim();
+            localStorage.setItem(key, JSON.stringify({
+                timestamp: Date.now(),
+                data: data
+            }));
+        } catch (e) { /* storage full, ignore */ }
+    }
+
+    // ============================================================================
+    // PLACEHOLDER IMAGE (via.placeholder.com is dead, use data URI)
+    // ============================================================================
+    function getPlaceholderUrl(text) {
+        const encoded = encodeURIComponent(text || 'Image');
+        // Use placehold.co which is reliable
+        return `https://placehold.co/400x533/1a1a2e/ffffff?text=${encoded}`;
+    }
+
+    // ============================================================================
+    // REQUEST QUEUE - Sequential with 1.5s delay + retry for 429
+    // ============================================================================
     const requestQueue = [];
     let isProcessingQueue = false;
 
@@ -24,19 +67,43 @@
         while (requestQueue.length > 0) {
             const { url, resolve, reject } = requestQueue.shift();
             try {
-                const response = await fetch(url);
+                const response = await fetchWithRetry(url, 2);
                 resolve(response);
             } catch (error) {
                 reject(error);
             }
-            // Wait 500ms between requests to avoid 429 rate limits
+            // Wait 1.5s between requests to avoid 429 rate limits
             if (requestQueue.length > 0) {
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 1500));
             }
         }
 
         isProcessingQueue = false;
     }
+
+    // Fetch with retry and exponential backoff for 429
+    async function fetchWithRetry(url, maxRetries) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 0) {
+                    const delay = attempt * 2000; // 2s, 4s
+                    console.log(`%c[RETRY] ⏳ Waiting ${delay}ms before retry #${attempt}`, 'color: #FF9800');
+                    await new Promise(r => setTimeout(r, delay));
+                }
+                const response = await fetch(url);
+                if (response.status === 429 && attempt < maxRetries) {
+                    console.warn(`%c[RETRY] ⚠️ Got 429, retrying...`, 'color: #FF9800');
+                    continue;
+                }
+                return response;
+            } catch (error) {
+                if (attempt === maxRetries) throw error;
+            }
+        }
+    }
+
+    // In-memory cache for current session
+    const imageCache = new Map();
 
     // Keywords to filter out unwanted images
     const UNWANTED_KEYWORDS = [
@@ -439,8 +506,7 @@
         return UNWANTED_KEYWORDS.some(keyword => lowerDesc.includes(keyword));
     }
 
-    // Cache for image URLs to prevent re-fetching
-    const imageCache = new Map();
+    // Cache for image URLs to prevent re-fetching (old Map removed, now at top)
 
     /**
      * Create Intersection Observer for lazy loading images
@@ -451,9 +517,8 @@
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     const searchQuery = img.getAttribute('data-search');
-
                     if (searchQuery) {
-                        // Check cache first
+                        // Check in-memory cache first
                         if (imageCache.has(searchQuery)) {
                             const cachedUrl = imageCache.get(searchQuery);
                             if (img.src !== cachedUrl) {
@@ -461,9 +526,18 @@
                             }
                             img.setAttribute('data-loaded', 'true');
                             observer.unobserve(img);
-                        } else if (img.getAttribute('data-loaded') === 'false') {
-                            loadImageFromPexels(img, searchQuery);
-                            observer.unobserve(img);
+                        } else {
+                            // Check localStorage cache
+                            const lsCached = getCachedResult(searchQuery);
+                            if (lsCached && lsCached.imageUrl) {
+                                img.src = lsCached.imageUrl;
+                                img.setAttribute('data-loaded', 'true');
+                                imageCache.set(searchQuery, lsCached.imageUrl);
+                                observer.unobserve(img);
+                            } else if (img.getAttribute('data-loaded') === 'false') {
+                                loadImageFromPexels(img, searchQuery);
+                                observer.unobserve(img);
+                            }
                         }
                     }
                 }
@@ -472,7 +546,7 @@
     }
 
     /**
-     * Load image from Pexels API with filtering
+     * Load image from Pexels API with filtering, localStorage caching, and retry
      */
     async function loadImageFromPexels(imgElement, searchQuery, options = {}) {
         const {
@@ -483,11 +557,22 @@
             skipCache = false
         } = options;
 
-        // If already cached, use it (unless skipCache is true)
+        // Check in-memory cache
         if (!skipCache && imageCache.has(searchQuery)) {
             imgElement.src = imageCache.get(searchQuery);
             imgElement.setAttribute('data-loaded', 'true');
             return;
+        }
+
+        // Check localStorage cache
+        if (!skipCache) {
+            const cached = getCachedResult(searchQuery);
+            if (cached && cached.imageUrl) {
+                imgElement.src = cached.imageUrl;
+                imgElement.setAttribute('data-loaded', 'true');
+                imageCache.set(searchQuery, cached.imageUrl);
+                return;
+            }
         }
 
         try {
@@ -500,21 +585,18 @@
 
             const response = await enqueueRequest(url);
             const contentType = response.headers.get('content-type') || '';
+            const cacheStatus = response.headers.get('x-cache') || 'N/A';
 
             console.log(`%c[PEXELS] 📥 Response for: ${imgElement.alt}`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
                 '\n  Status:', response.status,
-                '\n  Content-Type:', contentType,
-                '\n  URL:', response.url
+                '\n  Cache:', cacheStatus,
+                '\n  Content-Type:', contentType
             );
 
-            // Check if response is valid JSON (not an HTML error page)
             if (!response.ok) {
                 throw new Error(`API returned status ${response.status}`);
             }
             if (!contentType.includes('application/json')) {
-                // Log first 200 chars of response to see what we got
-                const textPreview = await response.text();
-                console.error(`%c[PEXELS] ❌ Got HTML instead of JSON for: ${imgElement.alt}`, 'color: #f44336', '\n  Preview:', textPreview.substring(0, 200));
                 throw new Error('Proxy returned HTML, not JSON');
             }
 
@@ -524,7 +606,6 @@
             if (data.photos && data.photos.length > 0) {
                 let photos = data.photos;
 
-                // Filter out images with people if requested
                 if (filterPeople) {
                     const filteredPhotos = photos.filter(photo => !hasUnwantedContent(photo.alt));
                     if (filteredPhotos.length > 0) {
@@ -532,45 +613,43 @@
                     }
                 }
 
-                // Select photo (random or first)
                 const selectedIndex = randomSelect ? Math.floor(Math.random() * photos.length) : 0;
                 const selectedPhoto = photos[selectedIndex];
 
-                // Preload image
                 const tempImg = new Image();
                 tempImg.onload = function () {
-                    const url = selectedPhoto.src.large;
-                    imgElement.src = url;
+                    const imgUrl = selectedPhoto.src.large;
+                    imgElement.src = imgUrl;
                     imgElement.setAttribute('data-loaded', 'true');
-                    imageCache.set(searchQuery, url);
+                    imageCache.set(searchQuery, imgUrl);
+                    setCachedResult(searchQuery, { imageUrl: imgUrl });
                 };
                 tempImg.onerror = function () {
-                    // Fallback to next photo or placeholder
-                    let url;
+                    let imgUrl;
                     if (photos.length > 1) {
                         const fallbackIndex = (selectedIndex + 1) % photos.length;
-                        url = photos[fallbackIndex].src.large;
+                        imgUrl = photos[fallbackIndex].src.large;
                     } else {
-                        url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
+                        imgUrl = getPlaceholderUrl(imgElement.alt);
                     }
-                    imgElement.src = url;
+                    imgElement.src = imgUrl;
                     imgElement.setAttribute('data-loaded', 'true');
-                    imageCache.set(searchQuery, url);
+                    imageCache.set(searchQuery, imgUrl);
                 };
                 tempImg.src = selectedPhoto.src.large;
             } else {
                 console.warn(`%c[PEXELS] ⚠️ No photos found for: ${imgElement.alt}`, 'color: #FF9800');
-                const url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
-                imgElement.src = url;
+                const imgUrl = getPlaceholderUrl(imgElement.alt);
+                imgElement.src = imgUrl;
                 imgElement.setAttribute('data-loaded', 'true');
-                imageCache.set(searchQuery, url);
+                imageCache.set(searchQuery, imgUrl);
             }
         } catch (error) {
             console.error(`%c[PEXELS] ❌ FAILED for: ${imgElement.alt}`, 'color: #f44336', '\n  Error:', error.message);
-            const url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
-            imgElement.src = url;
+            const imgUrl = getPlaceholderUrl(imgElement.alt);
+            imgElement.src = imgUrl;
             imgElement.setAttribute('data-loaded', 'true');
-            imageCache.set(searchQuery, url);
+            imageCache.set(searchQuery, imgUrl);
         }
     }
 
