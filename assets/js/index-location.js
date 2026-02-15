@@ -29,9 +29,9 @@
             } catch (error) {
                 reject(error);
             }
-            // Wait 200ms between requests
+            // Wait 500ms between requests to avoid 429 rate limits
             if (requestQueue.length > 0) {
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 500));
             }
         }
 
@@ -498,6 +498,15 @@
 
             const response = await enqueueRequest(url);
 
+            // Check if response is valid JSON (not an HTML error page)
+            if (!response.ok) {
+                throw new Error(`API returned status ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error('Proxy not available (non-JSON response) — are you running locally?');
+            }
+
             const data = await response.json();
 
             if (data.photos && data.photos.length > 0) {
@@ -544,7 +553,7 @@
                 imageCache.set(searchQuery, url);
             }
         } catch (error) {
-            console.warn('Error loading image for:', imgElement.alt, error);
+            console.warn('Image load skipped for:', imgElement.alt, '—', error.message);
             const url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
             imgElement.src = url;
             imgElement.setAttribute('data-loaded', 'true');
@@ -975,11 +984,15 @@
         initializeInternationalTours();
     }
 
-    // Initialize when DOM is ready
+    // Initialize when DOM is ready (delay to avoid competing with other API calls)
+    function startWithDelay() {
+        setTimeout(initializeAll, 2000);
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAll);
+        document.addEventListener('DOMContentLoaded', startWithDelay);
     } else {
-        initializeAll();
+        startWithDelay();
     }
 
 })();
@@ -1022,6 +1035,11 @@ function initializeRandomHeroImage() {
 
             if (!response.ok) {
                 throw new Error('Pexels API request failed');
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error('Proxy not available (running locally?)');
             }
 
             const data = await response.json();
@@ -1157,6 +1175,11 @@ function initializeRandomHeroImagev2() {
 
             if (!response.ok) {
                 throw new Error('Pexels API request failed');
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error('Proxy not available (running locally?)');
             }
 
             const data = await response.json();
