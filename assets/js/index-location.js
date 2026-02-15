@@ -1123,7 +1123,7 @@ function initializeRandomHeroImage() {
             const heroUrl = `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`;
             console.log(`%c[HERO-v1] 📡 Fetching`, 'color: #9C27B0', '\n  Keyword:', keyword, '\n  URL:', heroUrl);
 
-            const response = await fetch(heroUrl);
+            const response = await fetchWithRetry(heroUrl, 2);
             const ct = response.headers.get('content-type') || '';
             console.log(`%c[HERO-v1] 📥 Response`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
                 '\n  Status:', response.status, '\n  Content-Type:', ct);
@@ -1220,15 +1220,15 @@ function initializeRandomHeroImage() {
         updateImage();
     }, 100);
 
-    // Rotate every 10 seconds
-    setInterval(updateImage, 10000);
+    // Rotate every 45 seconds (reduced from 10s to save API calls)
+    setInterval(updateImage, 45000);
 }
 
-// Initialize when DOM is ready
+// Initialize after a delay to avoid competing with main content
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeRandomHeroImage);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(initializeRandomHeroImage, 3000));
 } else {
-    initializeRandomHeroImage();
+    setTimeout(initializeRandomHeroImage, 3000);
 }
 function initializeRandomHeroImagev2() {
     const container = document.getElementById('travel-based-flight');
@@ -1264,7 +1264,7 @@ function initializeRandomHeroImagev2() {
             const heroUrl2 = `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`;
             console.log(`%c[HERO-v2] 📡 Fetching`, 'color: #E91E63', '\n  Keyword:', keyword, '\n  URL:', heroUrl2);
 
-            const response = await fetch(heroUrl2);
+            const response = await fetchWithRetry(heroUrl2, 2);
             const ct = response.headers.get('content-type') || '';
             console.log(`%c[HERO-v2] 📥 Response`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
                 '\n  Status:', response.status, '\n  Content-Type:', ct);
@@ -1387,13 +1387,13 @@ function initializeRandomHeroImagev2() {
         updateImages();
     }, 500); // Wait for WOW.js animations
 
-    // Rotate every 10 seconds
-    setInterval(updateImages, 10000);
+    // Rotate every 60 seconds (reduced from 10s to save API calls)
+    setInterval(updateImages, 60000);
 }
 
-// Initialize when DOM is ready
+// Initialize after a delay (stagger with v1 hero)
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeRandomHeroImagev2);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(initializeRandomHeroImagev2, 8000));
 } else {
-    initializeRandomHeroImagev2();
+    setTimeout(initializeRandomHeroImagev2, 8000);
 }
