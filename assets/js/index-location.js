@@ -496,18 +496,30 @@
                 url += `&orientation=${orientation}`;
             }
 
+            console.log(`%c[PEXELS] 📡 Fetching: ${imgElement.alt}`, 'color: #2196F3', '\n  URL:', url);
+
             const response = await enqueueRequest(url);
+            const contentType = response.headers.get('content-type') || '';
+
+            console.log(`%c[PEXELS] 📥 Response for: ${imgElement.alt}`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
+                '\n  Status:', response.status,
+                '\n  Content-Type:', contentType,
+                '\n  URL:', response.url
+            );
 
             // Check if response is valid JSON (not an HTML error page)
             if (!response.ok) {
                 throw new Error(`API returned status ${response.status}`);
             }
-            const contentType = response.headers.get('content-type') || '';
             if (!contentType.includes('application/json')) {
-                throw new Error('Proxy not available (non-JSON response) — are you running locally?');
+                // Log first 200 chars of response to see what we got
+                const textPreview = await response.text();
+                console.error(`%c[PEXELS] ❌ Got HTML instead of JSON for: ${imgElement.alt}`, 'color: #f44336', '\n  Preview:', textPreview.substring(0, 200));
+                throw new Error('Proxy returned HTML, not JSON');
             }
 
             const data = await response.json();
+            console.log(`%c[PEXELS] ✅ Got ${data.photos ? data.photos.length : 0} photos for: ${imgElement.alt}`, 'color: #4CAF50');
 
             if (data.photos && data.photos.length > 0) {
                 let photos = data.photos;
@@ -547,13 +559,14 @@
                 };
                 tempImg.src = selectedPhoto.src.large;
             } else {
+                console.warn(`%c[PEXELS] ⚠️ No photos found for: ${imgElement.alt}`, 'color: #FF9800');
                 const url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
                 imgElement.src = url;
                 imgElement.setAttribute('data-loaded', 'true');
                 imageCache.set(searchQuery, url);
             }
         } catch (error) {
-            console.warn('Image load skipped for:', imgElement.alt, '—', error.message);
+            console.error(`%c[PEXELS] ❌ FAILED for: ${imgElement.alt}`, 'color: #f44336', '\n  Error:', error.message);
             const url = `https://via.placeholder.com/400x533?text=${encodeURIComponent(imgElement.alt)}`;
             imgElement.src = url;
             imgElement.setAttribute('data-loaded', 'true');
@@ -1028,27 +1041,28 @@ function initializeRandomHeroImage() {
         try {
             const keyword = keywords[Math.floor(Math.random() * keywords.length)];
             const randomPage = Math.floor(Math.random() * 10) + 1;
+            const heroUrl = `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`;
+            console.log(`%c[HERO-v1] 📡 Fetching`, 'color: #9C27B0', '\n  Keyword:', keyword, '\n  URL:', heroUrl);
 
-            const response = await fetch(
-                `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`
-            );
+            const response = await fetch(heroUrl);
+            const ct = response.headers.get('content-type') || '';
+            console.log(`%c[HERO-v1] 📥 Response`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
+                '\n  Status:', response.status, '\n  Content-Type:', ct);
 
             if (!response.ok) {
-                throw new Error('Pexels API request failed');
+                throw new Error(`API returned status ${response.status}`);
             }
-
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                throw new Error('Proxy not available (running locally?)');
+            if (!ct.includes('application/json')) {
+                throw new Error('Proxy returned HTML, not JSON');
             }
 
             const data = await response.json();
+            console.log(`%c[HERO-v1] ✅ Got ${data.photos ? data.photos.length : 0} photos`, 'color: #4CAF50');
 
             if (data.photos && data.photos.length > 0) {
                 const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
                 const imageUrl = randomPhoto.src.large;
 
-                // Preload the image
                 return new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = () => resolve(imageUrl);
@@ -1059,7 +1073,7 @@ function initializeRandomHeroImage() {
 
             return null;
         } catch (error) {
-            console.error('Error fetching Pexels image:', error);
+            console.error(`%c[HERO-v1] ❌ FAILED`, 'color: #f44336', error.message);
             return null;
         } finally {
             isFetching = false;
@@ -1168,27 +1182,28 @@ function initializeRandomHeroImagev2() {
         try {
             const keyword = keywords[Math.floor(Math.random() * keywords.length)];
             const randomPage = Math.floor(Math.random() * 10) + 1;
+            const heroUrl2 = `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`;
+            console.log(`%c[HERO-v2] 📡 Fetching`, 'color: #E91E63', '\n  Keyword:', keyword, '\n  URL:', heroUrl2);
 
-            const response = await fetch(
-                `/api/pexels-proxy?query=${keyword}&orientation=landscape&per_page=20&page=${randomPage}`
-            );
+            const response = await fetch(heroUrl2);
+            const ct = response.headers.get('content-type') || '';
+            console.log(`%c[HERO-v2] 📥 Response`, response.ok ? 'color: #4CAF50' : 'color: #f44336',
+                '\n  Status:', response.status, '\n  Content-Type:', ct);
 
             if (!response.ok) {
-                throw new Error('Pexels API request failed');
+                throw new Error(`API returned status ${response.status}`);
             }
-
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                throw new Error('Proxy not available (running locally?)');
+            if (!ct.includes('application/json')) {
+                throw new Error('Proxy returned HTML, not JSON');
             }
 
             const data = await response.json();
+            console.log(`%c[HERO-v2] ✅ Got ${data.photos ? data.photos.length : 0} photos`, 'color: #4CAF50');
 
             if (data.photos && data.photos.length > 0) {
                 const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
                 const imageUrl = randomPhoto.src.large;
 
-                // Preload the image
                 return new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = () => resolve(imageUrl);
@@ -1199,7 +1214,7 @@ function initializeRandomHeroImagev2() {
 
             return null;
         } catch (error) {
-            console.error('Error fetching Pexels image:', error);
+            console.error(`%c[HERO-v2] ❌ FAILED`, 'color: #f44336', error.message);
             return null;
         }
     }
