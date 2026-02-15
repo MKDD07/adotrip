@@ -83,6 +83,11 @@ async function loadPexelsImage() {
             throw new Error(`Pexels API error: ${response.status}`);
         }
 
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            throw new Error('Proxy not available (running locally?)');
+        }
+
         const data = await response.json();
 
         if (data.photos && data.photos.length > 0) {
@@ -138,7 +143,11 @@ function useFallbackImage(breadcrumbArea) {
 // Add photographer credit
 function addPhotoCredit(photographer, photographerUrl, photoUrl) {
     const breadcrumbArea = document.querySelector('.rts-breadcrumb-area');
+    if (!breadcrumbArea) return;
 
+    const credit = document.createElement('div');
+    credit.className = 'photo-credit';
+    credit.innerHTML = `Photo by <a href="${photographerUrl}" target="_blank" rel="noopener">${photographer}</a> on <a href="${photoUrl}" target="_blank" rel="noopener">Pexels</a>`;
 
     credit.style.cssText = `
         position: absolute;
