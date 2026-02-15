@@ -1,4 +1,5 @@
-const PEXELS_API_KEY = 'y6WP5reQNH7abdL2uzdLTyV8pq0kMmF3CHf7ZNkiHo98DXIvORUOBSfi';
+// Pexels API proxy URL (Cloudflare Pages Function handles auth + caching)
+const PEXELS_PROXY_URL = '/api/pexels-proxy';
 
 // Function to get city from URL parameters
 function getCityFromURL() {
@@ -75,12 +76,7 @@ async function loadPexelsImage() {
 
     try {
         const response = await fetch(
-            `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=20&orientation=landscape&size=large`,
-            {
-                headers: {
-                    Authorization: PEXELS_API_KEY
-                }
-            }
+            `${PEXELS_PROXY_URL}?query=${encodeURIComponent(searchQuery)}&per_page=20&orientation=landscape&size=large`
         );
 
         if (!response.ok) {
