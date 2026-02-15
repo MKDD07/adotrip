@@ -1429,7 +1429,7 @@
 
     <script>
         // Pexels API proxy URL (Cloudflare Pages Function handles auth + caching)
-        const PEXELS_PROXY_URL = '/api/pexels-proxy';
+        const GALLERY_PEXELS_PROXY = '/api/pexels-proxy';
 
         const keywords = [
             'Taj Mahal Agra India sunrise',
@@ -1480,6 +1480,11 @@
             lowQualityImg.src = lowQualityUrl;
         }
 
+        // Helper: delay between requests to avoid 429
+        function galleryDelay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         async function loadGalleryImages() {
             const swiperWrapper = document.querySelector('.gallery-slider .swiper-wrapper');
             if (!swiperWrapper) return;
@@ -1487,27 +1492,31 @@
             // Clear existing slides
             swiperWrapper.innerHTML = '';
 
-            // Fetch 6 images (reduced from 15 to prevent rate limiting)
-            const imagePromises = Array(6).fill(null).map(async () => {
-                const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-                const randomPage = Math.floor(Math.random() * 20) + 1;
+            // Fetch images SEQUENTIALLY with delays to prevent 429 rate limiting
+            // Use fewer requests (3 instead of 6) with more photos per request
+            const allPhotos = [];
+            const selectedKeywords = [];
+            for (let i = 0; i < 3; i++) {
+                selectedKeywords.push(keywords[Math.floor(Math.random() * keywords.length)]);
+            }
 
+            for (let i = 0; i < selectedKeywords.length; i++) {
                 try {
+                    if (i > 0) await galleryDelay(400); // 400ms between requests
                     const response = await fetch(
-                        `${PEXELS_PROXY_URL}?query=${encodeURIComponent(randomKeyword)}&per_page=3&page=${randomPage}`
+                        `${GALLERY_PEXELS_PROXY}?query=${encodeURIComponent(selectedKeywords[i])}&per_page=5&page=1`
                     );
-                    const data = await response.json();
-                    // Return all photos from each request for more variety
-                    return data.photos || [];
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.photos) allPhotos.push(...data.photos);
+                    }
                 } catch (error) {
-                    console.error('Error fetching image:', error);
-                    return [];
+                    console.warn('Gallery fetch error:', error);
                 }
-            });
+            }
 
-            const results = await Promise.all(imagePromises);
-            // Flatten arrays and filter nulls
-            const images = results.flat().filter(Boolean).slice(0, 15);
+            // Use collected photos
+            const images = allPhotos.filter(Boolean).slice(0, 15);
 
             // Create slides
             images.forEach((photo) => {
