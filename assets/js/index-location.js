@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const PEXELS_API_KEY = 'y6WP5reQNH7abdL2uzdLTyV8pq0kMmF3CHf7ZNkiHo98DXIvORUOBSfi';
+    // const PEXELS_API_KEY = 'YOUR_API_KEY_IS_NOW_SECURED_ON_NETLIFY'; // Key removed for security
 
     // Keywords to filter out unwanted images
     const UNWANTED_KEYWORDS = [
@@ -453,14 +453,12 @@
         }
 
         try {
-            let url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=${perPage}`;
+            let url = `/.netlify/functions/pexels-proxy?query=${encodeURIComponent(searchQuery)}&per_page=${perPage}`;
             if (orientation) {
                 url += `&orientation=${orientation}`;
             }
 
-            const response = await fetch(url, {
-                headers: { 'Authorization': PEXELS_API_KEY }
-            });
+            const response = await fetch(url);
 
             const data = await response.json();
 
