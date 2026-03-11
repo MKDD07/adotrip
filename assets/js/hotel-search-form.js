@@ -4,7 +4,7 @@
 
     const HotelSearch = {
         config: {
-            API_KEY: '7f83c49c4ab7a773e871e42237fd4775f124a8abb77e148899d0bbad6d307d69',
+            API_KEY: '8684cad58afd9e73b76ab3d491e063641fa4bead823bbccaa13b11c1399ca915',
             PROXY: 'https://corsproxy.io/?',
             debounceDelay: 300,
             minSearchLength: 2
