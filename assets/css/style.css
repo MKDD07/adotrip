@@ -28871,7 +28871,7 @@ body.with-sidebar {
   bottom: 0;
   height: 50%;
   /* control gradient height */
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) -0.22%, #000000 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) -0.22%, #0000005e 100%);
   pointer-events: none;
   z-index: -1;
   /* so it doesn't block clicks */
